@@ -24,5 +24,6 @@ build:
     - "huggingface_hub[cli]==0.26.3"
   run:
     - git clone https://github.com/Tencent/HunyuanVideo.git
+    - FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn --no-build-isolation
 
 predict: "predict.py:Predictor" 
