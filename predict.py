@@ -113,7 +113,7 @@ class Predictor(BasePredictor):
         self.args = args
 
         # Load models
-        self.unyuan_video_sampler = HunyuanVideoSampler.from_pretrained(models_root_path, args=args)
+        self.hunyuan_video_sampler = HunyuanVideoSampler.from_pretrained(models_root_path, args=args)
 
     def predict(
         self,
@@ -180,7 +180,7 @@ class Predictor(BasePredictor):
         self.hunyuan_video_sampler.args.video_size = [height, width]
 
         # Generate videos
-        outputs = self.model.predict(
+        outputs = self.hunyuan_video_sampler.predict(
             prompt=prompt,
             height=height,
             width=width,
@@ -197,7 +197,6 @@ class Predictor(BasePredictor):
         )
         
         # Save videos and return paths
-        output_paths = []
         output_dir = Path(self.args.save_path)
         output_dir.mkdir(exist_ok=True, parents=True)
         
