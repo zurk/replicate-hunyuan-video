@@ -8,12 +8,91 @@ from pathlib import Path
 from typing import List, Optional
 import torch
 from cog import BasePredictor, Input, Path as CogPath
-from hyvideo.config import parse_args
 from hyvideo.inference import HunyuanVideoSampler
 from hyvideo.utils.file_utils import save_videos_grid
+from argparse import Namespace
 
 
 _log = logging.getLogger("cog_predictor")
+
+
+def get_default_args() -> Namespace:
+    """Returns default arguments for HunyuanVideo model.
+    
+    Returns:
+        Namespace: Arguments with default values
+    """
+    return Namespace(
+        # Model paths and configs
+        model_base=Path("ckpts"),
+        dit_weight=Path("ckpts/hunyuan-video-t2v-720p/transformers/mp_rank_00_model_states.pt"),
+        model="HYVideo-T/2-cfgdistill",
+        model_resolution="540p",
+        
+        # Text encoder settings
+        text_encoder="llm",
+        text_encoder_2="clipL",
+        tokenizer="llm", 
+        tokenizer_2="clipL",
+        text_len=256,
+        text_len_2=77,
+        text_states_dim=4096,
+        text_states_dim_2=768,
+        text_encoder_precision="fp16",
+        text_encoder_precision_2="fp16",
+        prompt_template="dit-llm-encode",
+        prompt_template_video="dit-llm-encode-video",
+        
+        # Generation parameters
+        prompt="A cat walks on the grass, realistic style.",
+        neg_prompt=None,
+        seed=None,
+        seed_type="auto",
+        batch_size=1,
+        num_videos=1,
+        infer_steps=50,
+        cfg_scale=1.0,
+        embedded_cfg_scale=6.0,
+        
+        # Video settings
+        video_length=64,
+        video_size=[360, 640],
+        
+        # Flow parameters
+        flow_reverse=True,
+        flow_shift=7.0,
+        flow_solver="euler",
+        denoise_type="flow",
+        
+        # Model architecture
+        hidden_state_skip_layer=2,
+        rope_theta=256,
+        latent_channels=16,
+        
+        # Training schedule
+        linear_schedule_end=25,
+        use_linear_quadratic_schedule=False,
+        
+        # VAE settings
+        vae="884-16c-hy",
+        vae_precision="fp16",
+        vae_tiling=True,
+        
+        # Precision and performance
+        precision="bf16",
+        use_cpu_offload=True,
+        disable_autocast=False,
+        apply_final_norm=False,
+        
+        # Output settings
+        save_path=Path("./results"),
+        save_path_suffix="",
+        name_suffix="",
+        
+        # Other
+        load_key="module",
+        reproduce=False,
+    )
 
 
 class Predictor(BasePredictor):
@@ -21,7 +100,7 @@ class Predictor(BasePredictor):
         if not torch.cuda.is_available():
             raise RuntimeError("This model requires CUDA")
 
-        args = parse_args()
+        args = get_default_args()
         _log.info(args)
         models_root_path = Path(args.model_base)
         if not models_root_path.exists():
@@ -29,7 +108,7 @@ class Predictor(BasePredictor):
 
         # Create save folder to save the samples
         save_path = args.save_path if args.save_path_suffix == "" else f'{args.save_path}_{args.save_path_suffix}'
-        Path(save_path).mkdir(save_path, exist_ok=True, parents=True)
+        Path(save_path).mkdir(exist_ok=True, parents=True)
 
         self.args = args
 
